@@ -15,6 +15,25 @@ import { profileConfig, siteConfig } from '../../config'
 import { formatDateToYYYYMMDD } from '../../utils/date-utils'
 import Giscus from "../../components/comment/Giscus.astro"
 
+// 1. 静的画像をビルド時に収集（キーはファイルの絶対パス文字列、値は文字列もしくは { src: string } のオブジェクト）
+const images: Record<string, string | { src: string }> = import.meta.glob(
+  '/src/content/posts/**/*.{png,jpg,jpeg,webp}',
+  { import: 'default', eager: true }
+);
+
+// 2. フロントマターで指定された画像パス（例: "./cover.png"）を記事フォルダ基準の絶対パスに変換し、
+//    収集した画像群から最適化後の値を取得する関数
+function resolveCoverImage(frontmatterImage: string, entryId: string): string | { src: string } | null {
+  if (!frontmatterImage) return null;
+  // getDir(entry.id) で記事フォルダ名（例: "first-post"）を取得
+  const folder = path.join('/src/content/posts', getDir(entryId));
+  // フロントマターの "./cover.png" から "./" を除去して結合
+  const resolvedPath = path.join(folder, frontmatterImage.replace(/^\.\/+/, ''));
+  // OS依存の区切り対策（Windowsなら "\" になるので "/" に統一）
+  const normalizedPath = resolvedPath.replace(/\\/g, '/');
+  return images[normalizedPath] || null;
+}
+
 export async function getStaticPaths() {
   const blogEntries = await getCollection('posts', ({ data }) => {
     return import.meta.env.PROD ? data.draft !== true : true
@@ -26,6 +45,19 @@ export async function getStaticPaths() {
 }
 
 const { entry } = Astro.props
+
+// 3. フロントマターの image から最適化後の値を取得
+const coverOptimized = resolveCoverImage(entry.data.image, entry.id);
+// coverOptimized がオブジェクトの場合は .src を利用、そうでなければそのまま文字列として扱う
+const resolvedUrl =
+  coverOptimized && typeof coverOptimized === 'object' && 'src' in coverOptimized
+    ? coverOptimized.src
+    : (coverOptimized as string);
+const bannerUrl = resolvedUrl
+  ? new URL(resolvedUrl, Astro.url).href
+  : '';
+
+// 4. 記事のコンテンツレンダリング
 const { Content, headings } = await entry.render()
 
 const { remarkPluginFrontmatter } = await entry.render()
@@ -46,7 +78,7 @@ const jsonLd = {
   // TODO include cover image here
 }
 ---
-<MainGridLayout banner={entry.data.image} title={entry.data.title} description={entry.data.description} lang={entry.data.lang} setOGTypeArticle={true} headings={headings}>
+<MainGridLayout banner={bannerUrl} title={entry.data.title} description={entry.data.description} lang={entry.data.lang} setOGTypeArticle={true} headings={headings}>
     <script is:inline slot="head" type="application/ld+json" set:html={JSON.stringify(jsonLd)}></script>
     <div class="flex w-full rounded-[var(--radius-large)] overflow-hidden relative mb-4">
         <div id="post-container" class:list={["card-base z-10 px-6 md:px-9 pt-6 pb-4 relative w-full ",
