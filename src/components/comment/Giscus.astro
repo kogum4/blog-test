@@ -1,0 +1,29 @@
+---
+const giscus = {
+  repo: "kogum4/blog-test",            // あなたのGitHubユーザー名/リポジトリ名
+  repoId: "R_kgDON2WNXA",              // giscusで取得したリポジトリID
+  category: "Announcements",           // giscusで設定したカテゴリー名
+  categoryId: "DIC_kwDON2WNXM4CmyYz",  // giscusで取得したカテゴリーID
+  mapping: "pathname",                 // ページURLのパスと対応付け
+  reactionsEnabled: true,              // リアクション機能を有効にする
+  inputPosition: "bottom",             // コメント入力欄の位置（下部）
+  lang: "ja",
+  theme: "preferred_color_scheme",
+};
+---
+
+<div id="giscus_container">
+  <script src="https://giscus.app/client.js"
+    data-repo={giscus.repo}
+    data-repo-id={giscus.repoId}
+    data-category={giscus.category}
+    data-category-id={giscus.categoryId}
+    data-mapping={giscus.mapping}
+    data-reactions-enabled={giscus.reactionsEnabled ? "1" : "0"}
+    data-input-position={giscus.inputPosition}
+    data-theme={giscus.theme}
+    data-lang={giscus.lang}
+    crossorigin="anonymous"
+    async>
+  </script>
+</div>
